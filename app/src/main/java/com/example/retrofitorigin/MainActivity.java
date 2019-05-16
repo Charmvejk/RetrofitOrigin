@@ -6,6 +6,8 @@ import android.util.Log;
 
 import java.security.cert.CertPathBuilder;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.CallAdapter;
 import retrofit2.Callback;
@@ -23,10 +25,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadRequest() {
+        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        //todo 注释部分是：通常我们显示日志主要是在开发环境，而在生产环境，我们则希望日志能够被关闭，那么我们可以设置如下
+//        if (BuildConfig.DEBUG) {
+//            HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+//            logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+//
+//            httpClient.addInterceptor(logging);
+//        }
+        //添加拦截器到OkHttp，这是最关键的
+        httpClient.addInterceptor(logging);
         //步骤4:创建Retrofit对象
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("http://fy.iciba.com/") //http://fy.iciba.com/
                 .addConverterFactory(GsonConverterFactory.create())
+                .client(httpClient.build())
                 .build();
 
         // 步骤5:创建 网络请求接口 的实例
@@ -42,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
                 Translation translation = response.body();
                 translation.show();
             }
+
+
 
             @Override
             public void onFailure(Call<Translation> call, Throwable t) {
