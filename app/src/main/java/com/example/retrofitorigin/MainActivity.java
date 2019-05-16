@@ -4,12 +4,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
-import java.security.cert.CertPathBuilder;
+import java.io.IOException;
 
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
-import retrofit2.CallAdapter;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -21,10 +21,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        loadRequest();
+//        loadRequest1();
+        //---------------方式2------------------//
+        loadRequest2();
+
     }
 
-    private void loadRequest() {
+    private void loadRequest1() {
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
         logging.setLevel(HttpLoggingInterceptor.Level.BODY);
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
@@ -36,11 +39,14 @@ public class MainActivity extends AppCompatActivity {
 //            httpClient.addInterceptor(logging);
 //        }
         //添加拦截器到OkHttp，这是最关键的
+
         httpClient.addInterceptor(logging);
         //步骤4:创建Retrofit对象
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("http://fy.iciba.com/") //http://fy.iciba.com/
                 .addConverterFactory(GsonConverterFactory.create())
+                //todo 可以引入以上
+                // todo 也可以新建个类调用
                 .client(httpClient.build())
                 .build();
 
@@ -59,6 +65,42 @@ public class MainActivity extends AppCompatActivity {
             }
 
 
+            @Override
+            public void onFailure(Call<Translation> call, Throwable t) {
+
+            }
+        });
+    }
+
+    private void loadRequest2() {
+        OkHttpClient.Builder builder = new OkHttpClient().newBuilder();
+        builder.addNetworkInterceptor(new LoggingInterceptor());
+        if (BuildConfig.DEBUG) {
+            //日志拦截器
+            builder.addNetworkInterceptor(new LoggingInterceptor());
+        }
+        OkHttpClient okHttpClient = builder.build();
+        //步骤4:创建Retrofit对象
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("http://fy.iciba.com/") //http://fy.iciba.com/
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(okHttpClient)
+                .build();
+
+        // 步骤5:创建 网络请求接口 的实例
+        GetRequestInterface request = retrofit.create(GetRequestInterface.class);
+        Call<Translation> call = request.getCall();
+
+        //步骤6:发送网络请求(异步)
+        call.enqueue(new Callback<Translation>() {
+            @Override
+            public void onResponse(Call<Translation> call, Response<Translation> response) {
+
+                Log.d("hello", "onResponse: " + response.body());
+                Translation translation = response.body();
+                translation.show();
+            }
+
 
             @Override
             public void onFailure(Call<Translation> call, Throwable t) {
@@ -66,5 +108,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+
 }
 
